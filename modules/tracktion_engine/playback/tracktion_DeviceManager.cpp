@@ -1553,14 +1553,16 @@ void DeviceManager::audioDeviceIOCallbackInternal (const float* const* inputChan
 
                 for (auto c : activeContexts)
                     c->fillNextNodeBlock (outputChannelData, totalNumOutputChannels, numSamples);
-            }
 
-            for (int i = totalNumOutputChannels; --i >= 0;)
-                if (auto* dest = outputChannelData[i])
-                    if (activeOutChannels[i])
-                        for (int j = 0; j < numSamples; ++j)
-                            if (! std::isnormal (dest[j]))
-                                dest[j] = 0;
+                // Under contextLock (upstream 76e925e62a8, ported): the channel
+                // set is rebuilt on the message thread while devices change.
+                for (int i = totalNumOutputChannels; --i >= 0;)
+                    if (auto* dest = outputChannelData[i])
+                        if (activeOutChannels[i])
+                            for (int j = 0; j < numSamples; ++j)
+                                if (! std::isnormal (dest[j]))
+                                    dest[j] = 0;
+            }
 
             streamTime = blockStreamTime.getEnd();
             currentCpuUsage = deviceManager.getCpuUsage();
