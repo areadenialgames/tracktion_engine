@@ -15,6 +15,7 @@ namespace fade_utils
 {
     inline int timeToSample (int numSamples, TimeRange editTime, TimePosition t)
     {
+        jassert (! editTime.isEmpty());
         return (int) (((t - editTime.getStart()) / editTime.getLength() * numSamples) + 0.5);
     }
 
@@ -199,6 +200,9 @@ void FadeInOutNode::process (ProcessContext& pc)
 bool FadeInOutNode::renderingNeeded (const TimeRange timelineRange)
 {
     if (! getPlayHead().isPlaying())
+        return false;
+
+    if (timelineRange.isEmpty())
         return false;
 
     return (fadeIn + dynamicOffset).intersects (timelineRange)
