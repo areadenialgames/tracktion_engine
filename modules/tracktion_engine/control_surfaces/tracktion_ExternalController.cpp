@@ -76,9 +76,6 @@ ExternalController::~ExternalController()
         for (auto p : af->getAutomatableParameters())
             p->removeListener (this);
 
-    getControlSurface().shutDownDevice();
-    controlSurface = nullptr;
-
     auto& dm = engine.getDeviceManager();
     dm.removeChangeListener (this);
 
@@ -86,6 +83,9 @@ ExternalController::~ExternalController()
         if (auto min = dynamic_cast<PhysicalMidiInputDevice*> (d.get()))
             if (min->isEnabled())
                 min->removeExternalController (this);
+
+    getControlSurface().shutDownDevice();
+    controlSurface = nullptr;
 
     if (lastRegisteredSelectable != nullptr)
     {
