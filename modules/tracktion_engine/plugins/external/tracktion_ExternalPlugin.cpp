@@ -1020,8 +1020,15 @@ void ExternalPlugin::flushPluginStateToValueTree()
         TRACKTION_ASSERT_MESSAGE_THREAD
         juce::MemoryBlock chunk;
 
+        // suspendProcessing alone is not a barrier: applyToBuffer serialises on
+        // processMutex and never checks isSuspended(), so a getStateInformation
+        // here could run concurrently with processBlock (scene recall / save
+        // while playing). Take the same lock the audio thread takes.
         pi->suspendProcessing (true);
-        pi->getStateInformation (chunk);
+        {
+            const juce::ScopedLock sl (processMutex);
+            pi->getStateInformation (chunk);
+        }
         saveChangedParametersToState();
         pi->suspendProcessing (false);
 
@@ -1087,7 +1094,12 @@ void ExternalPlugin::restorePluginStateFromValueTree (const juce::ValueTree& v)
         chunk.fromBase64Encoding (s);
 
         if (chunk.getSize() > 0)
-            callBlockingCatching ([&pi, &chunk] { pi->setStateInformation (chunk.getData(), (int) chunk.getSize()); });
+            callBlockingCatching ([this, &pi, &chunk]
+                                  {
+                                      // Same barrier as flushPluginStateToValueTree: not concurrent with applyToBuffer
+                                      const juce::ScopedLock sl (processMutex);
+                                      pi->setStateInformation (chunk.getData(), (int) chunk.getSize());
+                                  });
     }
 }
 
@@ -1118,7 +1130,10 @@ void ExternalPlugin::updateFromMirroredPluginIfNeeded (Plugin& changedPlugin)
                 otherInstance->getStateInformation (chunk);
 
                 if (chunk.getSize() > 0)
+                {
+                    const juce::ScopedLock sl (processMutex);
                     pi->setStateInformation (chunk.getData(), (int) chunk.getSize());
+                }
             }
         }
     }
