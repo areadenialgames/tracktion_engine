@@ -254,6 +254,9 @@ public:
     */
     AudioAndMidiBuffer getProcessedOutput();
 
+    /** Reserves output MIDI storage during graph preparation, before processing. */
+    void reserveMidiMessages (int capacity) { midiBuffer.reserve (capacity); }
+
     //==============================================================================
     struct TransformOptions
     {

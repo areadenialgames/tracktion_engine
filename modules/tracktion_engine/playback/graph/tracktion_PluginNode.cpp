@@ -93,6 +93,19 @@ void PluginNode::prepareToPlay (const tracktion::graph::PlaybackInitialisationIn
 
     auto props = getNodeProperties();
 
+    // Plugins which produce large committed/chased MIDI streams can request
+    // storage before the audio callback. Reserve both arrays: process swaps
+    // these at the end of its first sub-block.
+    int midiCapacity = juce::jlimit (0, 65536, static_cast<int> (plugin->state.getProperty ("midiOutputCapacity", 0)));
+    if (auto* upstream = dynamic_cast<PluginNode*> (input.get()))
+        midiCapacity = std::max (midiCapacity, juce::jlimit (0, 65536,
+            static_cast<int> (upstream->getPlugin().state.getProperty ("midiOutputCapacity", 0))));
+    if (midiCapacity > 0)
+    {
+        midiMessageArray.reserve (midiCapacity);
+        reserveMidiMessages (midiCapacity);
+    }
+
     if (props.latencyNumSamples > 0)
         automationAdjustmentTime = TimeDuration::fromSamples (-props.latencyNumSamples, sampleRate);
 
