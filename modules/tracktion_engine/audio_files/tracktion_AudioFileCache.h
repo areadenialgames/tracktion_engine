@@ -117,7 +117,7 @@ public:
 private:
     Engine& engine;
     SampleCount totalBytesUsed = 0, cacheSizeSamples = 0;
-    bool cacheMissed = false;
+    std::atomic<bool> cacheMissed { false };
 
     std::atomic<double> blockDurationMs { 0.0 }, lastBlockDurationMs { 0.0 };
     struct ScopedFileRead;
