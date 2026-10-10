@@ -331,7 +331,12 @@ NodeRenderContext::WriteResult NodeRenderContext::writeAudioBlock (choc::buffer:
     // Prepare buffer to use
     auto blockSizeSamples = (int) block.getNumFrames();
 
-    juce::AudioBuffer<float> buffer (block.data.channels, numOutputChans, blockSizeSamples);
+    // toAudioBuffer honours the view's frame offset. Building the buffer from
+    // block.data.channels ignored it, so the partial block written after the
+    // render's latency drop came from the start of the block instead of its
+    // end, replacing the song's first samples with the latent plugin's
+    // pre-roll silence. (Noemi patch: tracktion-render-latency-offset.patch)
+    auto buffer = tracktion::graph::toAudioBuffer (block.getFirstChannels ((choc::buffer::ChannelCount) numOutputChans));
 
     // Apply dithering and mag/rms analysis
     if (r.ditheringEnabled && r.bitDepth < 32)
