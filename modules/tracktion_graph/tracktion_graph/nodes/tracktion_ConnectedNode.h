@@ -233,7 +233,7 @@ inline void ConnectedNode::process (ProcessContext& pc)
     auto destAudio = pc.buffers.audio;
     auto& destMIDI = pc.buffers.midi;
 
-    const int numSamples = (int) pc.referenceSampleRange.getLength();
+    const int numSamples = (int) pc.numSamples;   // frames; see LatencyNode::process
     juce::ignoreUnused (numSamples);
     jassert (destAudio.getNumChannels() == 0 || numSamples == (int) destAudio.getNumFrames());
 

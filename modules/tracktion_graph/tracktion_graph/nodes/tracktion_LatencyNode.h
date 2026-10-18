@@ -78,7 +78,10 @@ public:
     {
         auto inputBuffer = input->getProcessedOutput().audio;
         auto& inputMidi = input->getProcessedOutput().midi;
-        auto numSamples = (int) pc.referenceSampleRange.getLength();
+        // The block's frame count. The reference range is longer or shorter
+        // than the block while the timeline is speed-scaled (Link's tempo
+        // adjustment, the transport's speed scale) and is not a sample count.
+        auto numSamples = (int) pc.numSamples;
         jassert (pc.buffers.audio.getNumChannels() == 0 || numSamples == (int) pc.buffers.audio.getNumFrames());
 
         latencyProcessor->writeAudio (inputBuffer);
