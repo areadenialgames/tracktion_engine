@@ -299,13 +299,17 @@ struct EditPlaybackContext::NodePlaybackContext
 
         double sampleDuration = static_cast<double> (numSamples);
 
-        if (blockLengthScaleFactor != 1.0)
-            sampleDuration *= blockLengthScaleFactor;
+        // Link's tempo adjustment times the transport's own speed scale
+        // (Noemi local: lets a host app run the timeline at its clock's rate).
+        const double speedScale = blockLengthScaleFactor * editPlaybackContext.transport.getTimelineSpeedScale();
+
+        if (speedScale != 1.0)
+            sampleDuration *= speedScale;
 
         referenceStreamRange = juce::Range<double>::withStartAndLength (referenceStreamRange.getEnd(), sampleDuration);
         playHead.setReferenceSampleRange (getReferenceSampleRange());
         numSamplesToProcess = static_cast<choc::buffer::FrameCount> (numSamples);
-        processState.setPlaybackSpeedRatio (blockLengthScaleFactor);
+        processState.setPlaybackSpeedRatio (speedScale);
 
         // This needs to be called after the playhead reference range has been set above
         checkForTempoSequenceChanges();

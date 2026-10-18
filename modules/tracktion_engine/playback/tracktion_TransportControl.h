@@ -208,6 +208,18 @@ public:
     /** Returns true if this Edit is attached to the DeviceManager for playback. */
     bool isPlayContextActive() const                            { return playbackContext != nullptr; }
 
+    /** (Noemi local) Realtime multiplier on how fast the timeline advances
+        against the audio clock: 1.0 is normal, 1.25 plays the Edit 25% fast
+        (clips follow, resampled or time-stretched by their own mode, with
+        no graph rebuild). Combined with any Ableton Link tempo adjustment.
+        Safe from any thread; read once per audio block. */
+    void setTimelineSpeedScale (double scale) noexcept
+    {
+        timelineSpeedScale.store (std::isfinite (scale) && scale > 0.0 ? scale : 1.0, std::memory_order_relaxed);
+    }
+
+    double getTimelineSpeedScale() const noexcept               { return timelineSpeedScale.load (std::memory_order_relaxed); }
+
     /** Ensures an active EditPlaybackContext has been created so this Edit can be played back.
         @param alwaysReallocate If true, this will always create a new playback graph.
     */
@@ -400,6 +412,7 @@ private:
     std::unique_ptr<TransportState> transportState;
     std::unique_ptr<EditPlaybackContext> playbackContext;
     juce::ListenerList<Listener> listeners;
+    std::atomic<double> timelineSpeedScale { 1.0 };   // see setTimelineSpeedScale
 
     TimecodeSnapType currentSnapType;
     bool isDelayedChangePending = false;
